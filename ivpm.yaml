@@ -1,0 +1,9 @@
+
+package:
+  name: svt
+
+  paths:
+    project: {}
+    export: 
+      lib-dirs:
+      - src
