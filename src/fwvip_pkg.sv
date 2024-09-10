@@ -21,6 +21,42 @@ class fwvip_bfm_base;
 
 endclass
 
+class fwvip_rgy #(type T=int);
+    static T      prv_api_m[string];
+    static T      prv_api_l[$];
+
+    static function void register(T api);
+        prv_api_m[api.path] = api;
+        prv_api_l.push_back(api);
+    endfunction
+
+    static function T get(
+        string          path,
+        bit             suffix);
+        T ret;;
+        if (suffix) begin
+            foreach (prv_api_l[i]) begin
+                string bfm_path = prv_api_l[i].path;
+                if (path.len() <= bfm_path.len()) begin
+                    int x;
+                    for (x=0; x<path.len(); x++) begin
+                        if (path[path.len()-x-1] != bfm_path[bfm_path.len()-x-1]) begin
+                            break;
+                        end
+                    end
+                    if (x == path.len()) begin
+                        ret = prv_api_l[i];
+                        break;
+                    end
+                end
+            end
+        end else if (prv_api_m.exists(path)) begin
+            ret = prv_api_m[path];
+        end
+        return ret;
+    endfunction
+endclass
+
 interface class fwvip_mem_api;
 
     pure virtual task read8(
