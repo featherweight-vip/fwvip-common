@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://dv-flow.github.io/flow.dv.schema.json
+fragment:
+  # Example UVM testbench flow. The env FileSet lists ONLY the package .sv files
+  # under include:; the per-class .svh files are pulled in by the compiler's
+  # `include search path. incdirs are resolved relative to THIS flow.yaml dir and
+  # do NOT inherit `base`, so 'env'/'tests' must be added explicitly for the .svh
+  # includes to resolve.
+  tasks:
+  - name: uvm-env-src
+    uses: std.FileSet
+    with:
+      type: systemVerilogSource
+      base: env
+      incdirs: [".", "env"]      # 'env' so the per-class .svh includes resolve
+      include:
+      - ip_env_pkg.sv
+
+  - name: uvm-test-src
+    uses: std.FileSet
+    needs: [uvm-env-src]
+    with:
+      type: systemVerilogSource
+      base: tests
+      incdirs: [".", "tests"]    # 'tests' so the per-class .svh includes resolve
+      include:
+      - ip_tests_pkg.sv
+
+  - name: uvm-tb-src
+    uses: std.FileSet
+    needs: [uvm-test-src]
+    with:
+      type: systemVerilogSource
+      base: tb
+      incdirs: ["."]
+      include: [ip_hvl_top.sv]
+
+  - name: uvm-img
+    uses: hdlsim.vlt.SimImage
+    needs: [hdlsim.vlt.SimLibUVM, uvm-tb-src]
+    with:
+      top: [ip_hvl_top]
+
+  # One run task per scenario (same image, different +UVM_TESTNAME).
+  - root: uvm-smoke
+    uses: hdlsim.vlt.SimRun
+    needs: [uvm-img]
+    with:
+      plusargs:
+      - UVM_TESTNAME=ip_smoke_test
